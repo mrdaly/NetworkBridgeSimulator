@@ -44,7 +44,8 @@ def forwardPacket(msgData, port, table, ports, activePorts, cache):
             print ("Forwarding message " + str(msg["id"]) + " to port " 
                     + str(ports.index(table[packet["dest"]][0])))
             table[packet["dest"]][0].send(msgData)
-            cache.append(([table[packet["dest"]][0]], port, msgData)) # (<to ports>, <from port>, <message>)
+            # cache: (<to ports>, <from port>, <message>)
+            cache.append(([table[packet["dest"]][0]], port, msgData)) 
             return 
         else: #table[packet["dest"]][0] == port:
             print "Not forwarding message " + str(msg["id"])
@@ -53,7 +54,8 @@ def forwardPacket(msgData, port, table, ports, activePorts, cache):
         for p in activePorts:
             if p != port:
                 p.send(msgData)
-        cache.append(([p for p in activePorts], port, msgData)) # (<to ports>, <from port>, <message>)
+        # cache: (<to ports>, <from port>, <message>)
+        cache.append(([p for p in activePorts], port, msgData))
 
 if __name__ == "__main__":
     id = sys.argv[1]
@@ -128,7 +130,8 @@ if __name__ == "__main__":
                     for s in sockets:
                         designatedPorts.append(s)
                     for s in sockets:
-                        s.send(createPacket(portId(id, sockets.index(s)), "ffff", "bpdu", createBPDU(id, root, cost+1)))
+                        s.send(createPacket(portId(id, sockets.index(s)), "ffff",
+                               "bpdu", createBPDU(id, root, cost+1)))
                     lastBPDU = datetime.now()
                     endConvergence = datetime.now() + timedelta(milliseconds=convergenceTimeout)
                 break
@@ -142,15 +145,16 @@ if __name__ == "__main__":
         #send bpdu every 500 ms
         if (datetime.now() - lastBPDU).microseconds >= 500000:
             for s in sockets:
-                s.send(createPacket(portId(id, sockets.index(s)), "ffff", "bpdu", createBPDU(id, root, cost+1)))
+                s.send(createPacket(portId(id, sockets.index(s)), "ffff", "bpdu",
+                       createBPDU(id, root, cost+1)))
             lastBPDU = datetime.now()
 
         #forward messages now that convergence is over
         if not storedMsgs.empty() and datetime.now() > endConvergence:
             while not storedMsgs.empty():
                 storedMsg = storedMsgs.get()
-                forwardPacket(storedMsg[0], storedMsg[1], forwardingTable, sockets, designatedPorts, sentMsgsCache)
-
+                forwardPacket(storedMsg[0], storedMsg[1], forwardingTable, 
+                              sockets, designatedPorts, sentMsgsCache)
 
         if not rebroadcastMsgs.empty() and datetime.now() > endConvergence:
             while not rebroadcastMsgs.empty():
@@ -172,7 +176,8 @@ if __name__ == "__main__":
             
             if packet["type"] == "data":
                 if x in designatedPorts and datetime.now() >= endConvergence:
-                    forwardPacket(data, x, forwardingTable, sockets, designatedPorts, sentMsgsCache)
+                    forwardPacket(data, x, forwardingTable, sockets,
+                                  designatedPorts, sentMsgsCache)
                 elif x in designatedPorts and datetime.now() < endConvergence:
                    storedMsgs.put((data, x)) 
                 continue
@@ -204,7 +209,8 @@ if __name__ == "__main__":
                     forwardingTable = {}
                     for s in sockets:
                         if s != x:
-                            s.send(createPacket(portId(id, sockets.index(s)), "ffff", "bpdu", createBPDU(id, root, cost+1)))
+                            s.send(createPacket(portId(id, sockets.index(s)), 
+                                   "ffff", "bpdu", createBPDU(id, root, cost+1)))
 
                 elif int(msg["root"], 16) > int(root, 16):
                     endConvergence = datetime.now() + timedelta(milliseconds=convergenceTimeout)
@@ -213,7 +219,8 @@ if __name__ == "__main__":
                     if x not in designatedPorts:
                         designatedPorts.append(x)
                     #they are wrong, i know the root, tell them
-                    x.send(createPacket(portId(id, sockets.index(x)), "ffff", "bpdu", createBPDU(id, root, cost+1)))
+                    x.send(createPacket(portId(id, sockets.index(x)), "ffff",
+                           "bpdu", createBPDU(id, root, cost+1)))
                     forwardingTable = {}
 
                 elif int(msg["root"], 16) == int(root, 16):
@@ -226,7 +233,8 @@ if __name__ == "__main__":
                         #send new BPDU
                         for s in sockets:
                             if s != x:
-                                s.send(createPacket(portId(id, sockets.index(s)), "ffff", "bpdu", createBPDU(id, root, cost+1)))
+                                s.send(createPacket(portId(id, sockets.index(s)),
+                                       "ffff", "bpdu", createBPDU(id, root, cost+1)))
                     elif msg["cost"] == cost:
                         #break tie with
                         if int(designatedBridge, 16) > int(msg["id"], 16):
@@ -236,7 +244,8 @@ if __name__ == "__main__":
                             forwardingTable = {}
                             for s in sockets:
                                 if s != x:
-                                    s.send(createPacket(portId(id, sockets.index(s)), "ffff", "bpdu", createBPDU(id, root, cost+1)))
+                                    s.send(createPacket(portId(id, sockets.index(s)),
+                                           "ffff", "bpdu", createBPDU(id, root, cost+1)))
                         elif int(designatedBridge, 16) == int(msg["id"], 16):
                             if sockets.index(x) < sockets.index(rootPort):
                                 rootPort = x
@@ -245,7 +254,8 @@ if __name__ == "__main__":
                                 forwardingTable = {}
                                 for s in sockets:
                                     if s != x:
-                                        s.send(createPacket(portId(id, sockets.index(s)), "ffff", "bpdu", createBPDU(id, root, cost+1)))
+                                        s.send(createPacket(portId(id, sockets.index(s)),
+                                            "ffff", "bpdu", createBPDU(id, root, cost+1)))
                             elif sockets.index(x) > sockets.index(rootPort):
                                 endConvergence = datetime.now() + timedelta(milliseconds=convergenceTimeout)
                                 print "Disabled port: " + id + "/" + str(sockets.index(x))
